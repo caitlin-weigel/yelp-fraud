@@ -1,13 +1,28 @@
+---
+title: "Yelp Analysis"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: yeti
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
 library(tidytext)
 library(dplyr)
 library(tibble)
+library(ggplot2)
+library(tidyr)
+library(wordcloud)
+library(reshape2)
+```
 
+```{r data-cleaning, message=FALSE, warning=FALSE, include=FALSE}
 yelp <- read.csv("~/Desktop/yelp-fraud/Yelp.csv")
 
 bad_reviews = which(yelp$difference_rating <= -1.5)
 good_reviews = which(yelp$difference_rating >= 2)
-
-common_reviews = which(yelp$difference_rating > -1.5 & yelp$difference_rating < 2)
 
 # clean up the text
 review_text <- as.character(yelp$review)
@@ -21,44 +36,98 @@ review_table$review_text = as.character(review_table$review_text)
 positive_review = review_table[c(good_reviews),]
 negative_review = review_table[c(bad_reviews),]
 
-common_review = review_table[c(common_reviews),]
-
 positive_review <- positive_review %>% unnest_tokens(word, review_text)
 negative_review <- negative_review %>% unnest_tokens(word, review_text)
 
+common_reviews = which(yelp$difference_rating > -1.5 & yelp$difference_rating < 2)
+common_review = review_table[c(common_reviews),]
 common_review <- common_review %>% unnest_tokens(word, review_text)
+```
 
-# count the word frequencies
+Words Frequency {data-orientation=columns}
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Overrated Fraudulent Reviews
+
+```{r}
 data(stop_words)
 positive_review <- positive_review %>% anti_join(stop_words)
-positive_review %>% count(word, sort = TRUE)
 
-negative_review <- negative_review %>% anti_join(stop_words)
-negative_review %>% count(word, sort = TRUE)
-
-common_review <- common_review %>% anti_join(stop_words)
-common_review %>% count(word, sort = TRUE)
-
-# plot the word frequencies
-library(ggplot2)
 positive_count <- positive_review %>% count(word, sort = TRUE) %>% top_n(15) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
-negative_count <- negative_review %>% count(word, sort = TRUE) %>% top_n(15) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+positive_count
+```
 
-# the spread of sentiments
-library(tidyr)
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Underrated Fraudulent Reviews
+
+```{r}
+negative_review <- negative_review %>% anti_join(stop_words)
+
+negative_count <- negative_review %>% count(word, sort = TRUE) %>% top_n(15) %>% mutate(word = reorder(word, n)) %>% ggplot(aes(word, n)) + geom_col() + xlab(NULL) + coord_flip()
+negative_count
+```
+
+Spread of Sentiments {data-orientation=columns}
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Overrated Fraudulent Reviews
+
+```{r}
 positive_sentiment <- positive_review %>% inner_join(get_sentiments("bing")) %>% count(person, sentiment) %>% spread(sentiment, n, fill = 0) %>% mutate(sentiment = positive - negative)
 positive_spread <- ggplot(positive_sentiment, aes(person, sentiment)) +
   geom_col(show.legend = FALSE)
+positive_spread
+```
 
+### Underrated Fraudulent Reviews
+
+```{r}
 negative_sentiment <- negative_review %>% inner_join(get_sentiments("bing")) %>% count(person, sentiment) %>% spread(sentiment, n, fill = 0) %>% mutate(sentiment = positive - negative)
 negative_spread <- ggplot(negative_sentiment, aes(person, sentiment)) +
   geom_col(show.legend = FALSE)
+negative_spread
+```
 
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Normal Reviews
+
+```{r}
+common_review <- common_review %>% anti_join(stop_words)
 common_sentiment <- common_review %>% inner_join(get_sentiments("bing")) %>% count(person, sentiment) %>% spread(sentiment, n, fill = 0) %>% mutate(sentiment = positive - negative)
 common_spread <- ggplot(common_sentiment, aes(person, sentiment)) +
   geom_col(show.legend = FALSE)
+common_spread
+```
 
-# common postive and negative words
+### Calculation
+
+Average of Sentiments: 
+```{r}
+type <- c("Overrated Fraudulent Reviews:", "Underrated Fraudulent Reviews:", "Common Reviews:")
+average <- c(mean(positive_sentiment$sentiment), mean(negative_sentiment$sentiment), mean(common_sentiment$sentiment))
+average_sentiment <- data.frame(Type = type, Average = average)
+knitr::kable(average_sentiment)
+```
+
+Common Words with Sentiments {data-orientation=columns}
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Overrated Fraudulent Reviews
+
+```{r}
 bing_word_counts_positive <- positive_review %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) %>%
@@ -74,7 +143,15 @@ bing_word_counts_positive_graph <- bing_word_counts_positive %>%
   labs(y = "Contribution to sentiment",
        x = NULL) +
   coord_flip()
+bing_word_counts_positive_graph
+```
 
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Underrated Fraudulent Reviews
+
+```{r}
 bing_word_counts_negative <- negative_review %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) %>%
@@ -90,19 +167,37 @@ bing_word_counts_negative_graph <- bing_word_counts_negative %>%
   labs(y = "Contribution to sentiment",
        x = NULL) +
   coord_flip()
+bing_word_counts_negative_graph
+```
 
-# generate word cloud
-library(wordcloud)
-library(reshape2)
+Word Cloud {data-orientation=columns}
+=======================================================================
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Overrated Fraudulent Reviews
+
+```{r}
 positive_review %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) %>%
   acast(word ~ sentiment, value.var = "n", fill = 0) %>%
   comparison.cloud(colors = c("red", "blue"),
                    max.words = 100)
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Underrated Fraudulent Reviews
+
+```{r}
 negative_review %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) %>%
   acast(word ~ sentiment, value.var = "n", fill = 0) %>%
   comparison.cloud(colors = c("red", "blue"),
                    max.words = 100)
+```
+

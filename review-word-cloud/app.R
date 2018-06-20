@@ -14,11 +14,11 @@ library(wordcloud)
 library(memoise)
 
 # The list of valid books
-stars <- list("one" = "1",
-              "two" = "2",
-              "three" = "3",
-              "four" = "4",
-              "five" = "5")
+stars <- list("1" = "1_star",
+              "2" = "2_star",
+              "3" = "3_star",
+              "4" = "4_star",
+              "5" = "5_star")
 
 # Using "memoise" to automatically cache the results
 getTermMatrix <- memoise(function(star) {
@@ -27,12 +27,12 @@ getTermMatrix <- memoise(function(star) {
   if (!(star %in% stars))
     stop("Invalild star rating.")
   
-  #text <- readLines(sprintf("./%s.txt.gz", review),
-                    #encoding="UTF-8")
+  text <- readLines(sprintf("./%s.csv", star),
+                    encoding="UTF-8")
   
-  words <- restaurant_rating
+  #words <- restaurant_rating
   
-  myCorpus = Corpus(VectorSource(words))
+  myCorpus = Corpus(VectorSource(text))
   myCorpus = tm_map(myCorpus, content_transformer(tolower))
   myCorpus = tm_map(myCorpus, removePunctuation)
   myCorpus = tm_map(myCorpus, removeNumbers)

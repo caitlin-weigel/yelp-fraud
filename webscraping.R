@@ -52,8 +52,10 @@ scrape = function(url) {
   
   rating <- rating %>% html_attr(name = "title")
   rating <- rating %>% substr(1, 3)
+  rating <- as.numeric(as.character(rating))
   overall <- overall %>% html_attr(name = "title")
   overall <- overall %>% substr(1, 3)
+  overall <- as.numeric(as.character(overall))
   
   friends <- as.numeric(gsub(" friends", "", friends))
   review_count <- as.numeric(gsub(" reviews", "", review_count))
@@ -75,3 +77,5 @@ pandaex <- scrape("https://www.yelp.com/biz/panda-express-parma-2")
 boiler <- scrape("https://www.yelp.com/biz/the-boiler-65-cleveland?start=100&sort_by=rating_asc")
 
 restaurant_rating <- rbind(yourstruly, buffalo, buffalo2, olive, panera, panera2, cicis, dibellas, pandaex, boiler)
+restaurant_rating <- transform(restaurant_rating, difference_rating = as.numeric(as.character(rating)) - as.numeric(as.character(overall_rating)))
+restaurant_rating <- transform(restaurant_rating, isFraud = ifelse(difference_rating > 2, "1", "0"))

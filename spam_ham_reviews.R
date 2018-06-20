@@ -9,9 +9,11 @@ library(caret)
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-data <- read.delim(DATA, quote = NULL, stringsAsFactors = FALSE) %>%
+data <- read.delim(export1, quote = NULL, stringsAsFactors = FALSE) %>%
   setNames(c("label", "text")) %>%
   mutate(label = factor(label, levels = c("spam", "ham")))
+
+corpus <- export1
 
 # Create the corpus.
 #

@@ -34,10 +34,6 @@ getTermMatrix <- memoise(function(star) {
   
   #### SPREADING THE DATA
   
-  
-  
-  
-  
   words <- restaurant_rating
   
   myCorpus = Corpus(VectorSource(words))

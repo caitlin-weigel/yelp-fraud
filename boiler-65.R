@@ -61,8 +61,13 @@ for (i in item) {
   ratingAll <- c(ratingAll, rating_new)
 }
 
-boiler <- data.frame(name = nameAll, rating = ratingAll, review = reviewAll, friends_count = friendAll,
+boiler <- data.frame(name = nameAll, ratings = ratingAll, reviews = reviewAll, friends_count = friendAll,
                      review_count = nreviewAll)
-
+boiler$rest_rating = 3
+boiler$differ = boiler$ratings - boiler$rest_rating
 View(boiler)
+
+bad_reviews = which(boiler$differ == min(boiler$differ))
+good_reviews = which(boiler$differ == max(boiler$differ))
+
 
